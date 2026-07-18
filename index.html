@@ -171,17 +171,51 @@
 
     /* ── Pay Breakdown ── */
     .pay-section { background: var(--light); }
-    .pay-intro { color: var(--gray); font-size: 1.05rem; max-width: 700px; margin-bottom: 2.5rem; line-height: 1.7; }
-    .pay-table-wrap { overflow-x: auto; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-    .pay-table { width: 100%; border-collapse: collapse; background: var(--white); font-size: 0.95rem; }
-    .pay-table thead { background: var(--navy); color: var(--white); }
-    .pay-table thead th { padding: 1rem 1.25rem; text-align: left; font-size: 0.82rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+    .pay-intro { color: var(--gray); font-size: 1.05rem; max-width: 700px; margin-bottom: 2rem; line-height: 1.7; }
+    .pay-legend {
+      display: flex;
+      gap: 2rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--navy);
+    }
+    .legend-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+    .legend-dot.dedicated { background: var(--orange); }
+    .legend-dot.own-auth { background: var(--navy); }
+    .chart-wrap {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      margin-bottom: 2rem;
+    }
+    .pay-table-wrap { overflow-x: auto; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-top: 2rem; }
+    .pay-table { width: 100%; border-collapse: collapse; background: var(--white); font-size: 0.92rem; }
+    .pay-table thead tr.head-dedicated { background: var(--orange); color: var(--white); }
+    .pay-table thead tr.head-own-auth { background: var(--navy); color: var(--white); }
+    .pay-table thead tr.head-label { background: #f8f9fa; }
+    .pay-table thead th { padding: 0.75rem 1rem; text-align: left; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; }
+    .pay-table thead th.center { text-align: center; }
     .pay-table tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
     .pay-table tbody tr:last-child { border-bottom: none; }
     .pay-table tbody tr:hover { background: #fef3e8; }
-    .pay-table tbody td { padding: 1rem 1.25rem; color: var(--text); vertical-align: middle; }
+    .pay-table tbody td { padding: 0.85rem 1rem; color: var(--text); vertical-align: middle; }
     .pay-table tbody td:first-child { font-weight: 700; color: var(--navy); }
-    .pay-highlight { color: var(--green); font-weight: 700; font-size: 1rem; }
+    .pay-table tbody td.ded { color: var(--orange); font-weight: 700; }
+    .pay-table tbody td.auth { color: var(--navy2); font-weight: 700; }
+    .pay-table tbody td.rpm { color: var(--gray); font-size: 0.85rem; }
     .pay-note { margin-top: 1.25rem; font-size: 0.85rem; color: var(--gray); font-style: italic; }
     .pay-note strong { color: var(--text); font-style: normal; }
 
@@ -384,69 +418,155 @@
       <p class="section-tag">Compensation</p>
       <h2 class="section-title">Owner Operator Pay Breakdown</h2>
       <p class="pay-intro">
-        As an owner operator, you're paid a percentage of gross load revenue — not a flat
-        cents-per-mile rate. That means when rates are strong, you earn more. Below is a
-        breakdown of how earnings typically look across our freight lanes. These are
-        representative figures; your actual numbers will depend on route, equipment,
-        and fuel costs.
+        Real numbers on real lanes. We run two programs — <strong style="color:var(--orange)">O/O Dedicated</strong> for
+        operators running under GMH's MC#, and <strong style="color:var(--navy)">O/O Own Authority</strong> for operators
+        with their own MC#. Rates shown are per-load gross earnings. All figures before operating expenses.
       </p>
 
+      <div class="pay-legend">
+        <div class="legend-item"><span class="legend-dot dedicated"></span> O/O Dedicated &mdash; Running under GMH's MC#</div>
+        <div class="legend-item"><span class="legend-dot own-auth"></span> O/O Own Authority &mdash; Running under your own MC#</div>
+      </div>
+
+      <div class="chart-wrap">
+        <canvas id="payChart" height="520"></canvas>
+      </div>
+
       <div class="pay-table-wrap">
-        <table class="pay-table" aria-label="Owner Operator Pay Breakdown">
+        <table class="pay-table" aria-label="Owner Operator Pay Breakdown by Lane">
           <thead>
+            <tr class="head-label">
+              <th rowspan="2" style="background:#1a2f47;color:#fff;vertical-align:middle;">Lane</th>
+              <th colspan="2" class="center" style="background:var(--orange);color:#fff;">O/O Dedicated (GMH MC#)</th>
+              <th colspan="2" class="center" style="background:var(--navy);color:#fff;">O/O Own Authority</th>
+            </tr>
             <tr>
-              <th>Lane / Route Type</th>
-              <th>Avg Miles / Week</th>
-              <th>Gross Revenue / Mile</th>
-              <th>Your % of Load</th>
-              <th>Est. Weekly Gross</th>
-              <th>Est. Annual Gross</th>
+              <th style="background:#f97316;color:#fff;">Per Load</th>
+              <th style="background:#fb923c;color:#fff;">Rate/Mile</th>
+              <th style="background:#1a2f47;color:#fff;">Per Load</th>
+              <th style="background:#243b55;color:#fff;">Rate/Mile</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>Regional — Mid-Atlantic</td>
-              <td>2,000 – 2,500</td>
-              <td>$3.00 – $3.80</td>
-              <td>72%</td>
-              <td class="pay-highlight">$4,320 – $6,840</td>
-              <td class="pay-highlight">$225K – $356K</td>
-            </tr>
-            <tr>
-              <td>Regional — New England</td>
-              <td>1,800 – 2,200</td>
-              <td>$3.20 – $4.00</td>
-              <td>72%</td>
-              <td class="pay-highlight">$4,147 – $6,336</td>
-              <td class="pay-highlight">$216K – $330K</td>
-            </tr>
-            <tr>
-              <td>OTR — Long-Haul</td>
-              <td>2,500 – 3,000</td>
-              <td>$2.80 – $3.50</td>
-              <td>72%</td>
-              <td class="pay-highlight">$5,040 – $7,560</td>
-              <td class="pay-highlight">$262K – $393K</td>
-            </tr>
-            <tr>
-              <td>Dedicated Lanes</td>
-              <td>1,500 – 2,000</td>
-              <td>$3.50 – $4.50</td>
-              <td>72%</td>
-              <td class="pay-highlight">$3,780 – $6,480</td>
-              <td class="pay-highlight">$197K – $337K</td>
-            </tr>
+            <tr><td>PA → 4 Stops NH</td><td class="ded">$2,115.81</td><td class="rpm">$4.59/mi</td><td class="auth">$2,066.60</td><td class="rpm">$4.48/mi</td></tr>
+            <tr><td>PA → 3 Stops MA</td><td class="ded">$1,734.42</td><td class="rpm">$4.60/mi</td><td class="auth">$1,694.09</td><td class="rpm">$4.49/mi</td></tr>
+            <tr><td>NC → Pittston, PA</td><td class="ded">$2,298.78</td><td class="rpm">$4.26/mi</td><td class="auth">$2,245.32</td><td class="rpm">$4.17/mi</td></tr>
+            <tr><td>PA → VT</td><td class="ded">$2,128.50</td><td class="rpm">$5.56/mi</td><td class="auth">$2,079.00</td><td class="rpm">$5.43/mi</td></tr>
+            <tr><td>VT → PA</td><td class="ded">$1,184.81</td><td class="rpm">$2.42/mi</td><td class="auth">$1,157.25</td><td class="rpm">$2.36/mi</td></tr>
+            <tr><td>VT → MA</td><td class="ded">$1,021.68</td><td class="rpm">$6.35/mi</td><td class="auth">$997.92</td><td class="rpm">$6.20/mi</td></tr>
+            <tr><td>VT → PA (long)</td><td class="ded">$1,830.51</td><td class="rpm">$2.83/mi</td><td class="auth">$1,787.94</td><td class="rpm">$2.77/mi</td></tr>
+            <tr><td>VT → MD</td><td class="ded">$1,551.20</td><td class="rpm">$2.68/mi</td><td class="auth">$1,515.13</td><td class="rpm">$2.62/mi</td></tr>
+            <tr><td>VT → PA (regional)</td><td class="ded">$1,557.11</td><td class="rpm">$3.64/mi</td><td class="auth">$1,520.90</td><td class="rpm">$3.55/mi</td></tr>
+            <tr><td>NJ → VT</td><td class="ded">$1,702.80</td><td class="rpm">$5.30/mi</td><td class="auth">$1,663.20</td><td class="rpm">$5.18/mi</td></tr>
+            <tr><td>MD → VT</td><td class="ded">$1,844.27</td><td class="rpm">$3.19/mi</td><td class="auth">$1,801.38</td><td class="rpm">$3.12/mi</td></tr>
+            <tr><td>OH → NY</td><td class="ded">$2,496.15</td><td class="rpm">$4.46/mi</td><td class="auth">$2,438.10</td><td class="rpm">$4.35/mi</td></tr>
+            <tr><td>OH → PA</td><td class="ded">$2,298.78</td><td class="rpm">$4.61/mi</td><td class="auth">$2,245.32</td><td class="rpm">$4.50/mi</td></tr>
+            <tr><td>MA → VT</td><td class="ded">$862.47</td><td class="rpm">$3.02/mi</td><td class="auth">$842.41</td><td class="rpm">$2.95/mi</td></tr>
+            <tr><td>ME → NC</td><td class="ded">$2,383.92</td><td class="rpm">$3.31/mi</td><td class="auth">$2,328.48</td><td class="rpm">$3.23/mi</td></tr>
+            <tr><td>ME → CT</td><td class="ded">$1,112.23</td><td class="rpm">$6.43/mi</td><td class="auth">$1,086.36</td><td class="rpm">$6.28/mi</td></tr>
           </tbody>
         </table>
       </div>
 
       <p class="pay-note">
-        <strong>Note:</strong> Figures above are <em>gross earnings before your operating expenses</em>
-        (fuel, maintenance, insurance, truck payments, etc.). Talk to Matt for current rate specifics
-        on the lanes you're targeting.
+        <strong>Note:</strong> All figures are gross per-load earnings <em>before</em> operating expenses
+        (fuel, maintenance, insurance, truck payments, etc.). Talk to Matt for current availability
+        on specific lanes.
       </p>
     </div>
   </section>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script>
+    const lanes = [
+      'OH → NY', 'ME → NC', 'NC → Pittston PA', 'OH → PA',
+      'PA → VT', 'PA → 4 Stops NH', 'MD → VT', 'VT → PA (long)',
+      'VT → PA (reg)', 'VT → MD', 'NJ → VT', 'PA → 3 Stops MA',
+      'VT → PA', 'ME → CT', 'VT → MA', 'MA → VT'
+    ];
+    const dedicated = [2496.15, 2383.92, 2298.78, 2298.78, 2128.50, 2115.81, 1844.27, 1830.51, 1557.11, 1551.20, 1702.80, 1734.42, 1184.81, 1112.23, 1021.68, 862.47];
+    const ownAuth   = [2438.10, 2328.48, 2245.32, 2245.32, 2079.00, 2066.60, 1801.38, 1787.94, 1520.90, 1515.13, 1663.20, 1694.09, 1157.25, 1086.36,  997.92, 842.41];
+    const dedRPM    = [4.46, 3.31, 4.26, 4.61, 5.56, 4.59, 3.19, 2.83, 3.64, 2.68, 5.30, 4.60, 2.42, 6.43, 6.35, 3.02];
+    const authRPM   = [4.35, 3.23, 4.17, 4.50, 5.43, 4.48, 3.12, 2.77, 3.55, 2.62, 5.18, 4.49, 2.36, 6.28, 6.20, 2.95];
+
+    const ctx = document.getElementById('payChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: lanes,
+        datasets: [
+          {
+            label: 'O/O Dedicated (GMH MC#)',
+            data: dedicated,
+            backgroundColor: 'rgba(232, 96, 10, 0.85)',
+            borderColor: 'rgba(232, 96, 10, 1)',
+            borderWidth: 1,
+            borderRadius: 4,
+          },
+          {
+            label: 'O/O Own Authority',
+            data: ownAuth,
+            backgroundColor: 'rgba(13, 27, 42, 0.80)',
+            borderColor: 'rgba(13, 27, 42, 1)',
+            borderWidth: 1,
+            borderRadius: 4,
+          }
+        ]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) {
+                const idx = ctx.dataIndex;
+                const rpm = ctx.datasetIndex === 0 ? dedRPM[idx] : authRPM[idx];
+                return ` $${ctx.parsed.x.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}  ·  $${rpm.toFixed(2)}/mile`;
+              },
+              title: function(items) {
+                return items[0].label;
+              }
+            },
+            backgroundColor: 'rgba(13,27,42,0.92)',
+            titleColor: '#ff7a1a',
+            bodyColor: '#e2e8f0',
+            padding: 12,
+            bodyFont: { size: 13 },
+            titleFont: { size: 13, weight: 'bold' }
+          }
+        },
+        scales: {
+          x: {
+            ticks: {
+              callback: v => '$' + v.toLocaleString(),
+              color: '#6b7280',
+              font: { size: 11 }
+            },
+            grid: { color: 'rgba(0,0,0,0.06)' },
+            title: {
+              display: true,
+              text: 'Gross Per Load',
+              color: '#6b7280',
+              font: { size: 12, weight: '600' }
+            }
+          },
+          y: {
+            ticks: {
+              color: '#1f2937',
+              font: { size: 11.5, weight: '600' }
+            },
+            grid: { display: false }
+          }
+        },
+        layout: { padding: { right: 10 } }
+      }
+    });
+  </script>
 
   <!-- ══════════════════════ APPLY FORM ══════════════════════ -->
   <section id="apply" class="apply-section">
